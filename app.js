@@ -4,19 +4,31 @@ const bodyParser = require('body-parser')
 const morgan = require('morgan')
 const mongoose = require('mongoose')
 const product = require('./models/product')
+const cors = require('cors')
+
+
+
+// app.use(cors)
 
 
 //routes
 const categoriesRoutes = require('./routers/categories')
 const productsRoutes = require('./routers/products')
 const usersRoutes = require('./routers/users')
-const orderRoutes = require('./routers/orders')
+const orderRoutes = require('./routers/orders');
+const authJwt = require('./helpers/jwt');
+const errorHandler = require('./helpers/error-handler');
+
+
 
 require('dotenv/config')
 
 const api = process.env.API_URL;
 app.use(morgan('tiny'))
 app.use(bodyParser.json())
+app.use(authJwt())
+app.use(errorHandler)
+
 
 //routes added
 app.use(`${api}/products`, productsRoutes)
@@ -37,6 +49,6 @@ mongoose.connect(
    console.log(err)
 });
 
-app.listen(3001, () => {
-   console.log(`app started at port 3001`)
+app.listen(3000, () => {
+   console.log(`app started at port 3000`)
 })   
