@@ -20,12 +20,25 @@ function authJwt() {
 //used regular expression for products one in order to get the products
 
 //classifying the user
-const isRevoked = async (req, payload, done) => {
-   if (!payload.isAdmin) {
-      done(null, true)
+async function isRevoked(req, token) {
+   if (!token.payload.isAdmin) {
+      return true;
    }
-   else
-      done()
 }
 
 module.exports = authJwt;
+
+
+// {
+//     "orderItems":{
+//         "quantity":3,
+//         "product":"633f17b6afce589f71656c35"
+//     },
+//     "shippingAddress1":"Flowers Street 45",
+//     "shippingAddress2":"obito mall",
+//     "city":"Prague",
+//     "zip":"00000",
+//     "country":"chez-Republic",
+//     "phone":"645345352",
+//     "user":"6341340c430b849a8004a8f6"
+// }
