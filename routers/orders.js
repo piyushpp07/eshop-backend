@@ -1,6 +1,7 @@
 const { Order } = require('../models/order')
 const { OrderItem } = require('../models/order-item')
 const express = require('express')
+const { response } = require('express')
 const router = express.Router()
 
 router.get(`/`, async (req, res) => {
@@ -40,6 +41,13 @@ router.post('/', async (req, res) => {
    }))
 
    const orderItemIdsResolved = await orderItemIds;
+   let totalPrices = await Promise.all(orderItemIdsResolved.map(async orderItemId => {
+      const orderItem = await OrderItem.findById(orderItemId).populate('product', 'price')
+      const totalPrice = orderItem.product.price * orderItem.quantity
+      return totalPrice
+   }))
+   const totalPrice = totalPrices.reduce((a, b) => a + b, 0)
+   console.log(totalPrices)
    console.log(orderItemIdsResolved)
    let order = new Order({
       orderItems: orderItemIdsResolved,
@@ -50,13 +58,52 @@ router.post('/', async (req, res) => {
       country: req.body.zip,
       phone: req.body.phone,
       status: req.body.status,
-      totalPrice: req.body.totalPrice,
+      totalPrice: totalPrice,
       user: req.body.user
    });
    order = await order.save();
    if (!order)
       return res.status(404).send('the order can not be created');
    res.send(order);
+})
+
+router.put('/:id', async (req, res) => {
+   const order = await Order.findByIdAndUpdate(req.params.id, {
+      status: req.body.status
+   }, { new: true })
+   if (!order)
+      return res.status(404).send('the order can not be created');
+   res.send(order);
+})
+
+//delete a Order with id 
+router.delete('/:id', (req, res) => {
+   Order.findByIdAndRemove(req.params.id).then(async order => {
+      if (order) {
+         await order.orderItems.map(async orderItem => {
+            await orderItem.findByIdAndRemove(orderItem)
+         })
+         return res.status(200).json({ success: true, message: "order is deleted" })
+
+      }
+
+      else {
+         return res.status(404).json({ success: false, message: "order not found" })
+      }
+
+   }).catch((err) => {
+      return res.status(400).json({ success: false });
+   })
+})
+
+router.get('get/totalsales', async (req, res) => {
+   const totalSales = await Order.aggregate([
+      { $group: { _id: null, totalSales: { $sum: '$totalPrice' } } }
+   ])
+   if (!totalSales) {
+      return res.status(400).send('The order sales can not be generated')
+   }
+   return res.send({ totalsales: totalSales.pop().totalsales })
 })
 
 
